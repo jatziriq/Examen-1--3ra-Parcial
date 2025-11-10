@@ -34,7 +34,7 @@ export class TareasService {
   async cargarTareas() {
     const tareas = await this._storage?.get('tareas');
     this.tareas = tareas || [];
-    console.log('📋 Tareas cargadas:', this.tareas);
+    console.log('Tareas cargadas:', this.tareas);
     return this.tareas;
   }
 
