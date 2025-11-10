@@ -1,20 +1,197 @@
 <ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-title>Administrador de Tareas</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="presentModalCompleto()">
+        <ion-icon slot="icon-only" name="add-circle"></ion-icon>
+      </ion-button>
+      <ion-button (click)="mostrarMenuBackup()">
+        <ion-icon slot="icon-only" name="cloud-download-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+
+  <!-- Estadísticas -->
   <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="3">
+          <div class="stat-box">
+            <div class="stat-number">{{ estadisticas.total }}</div>
+            <div class="stat-label">Total</div>
+          </div>
+        </ion-col>
+        <ion-col size="3">
+          <div class="stat-box">
+            <div class="stat-number">{{ estadisticas.completadas }}</div>
+            <div class="stat-label">Completadas</div>
+          </div>
+        </ion-col>
+        <ion-col size="3">
+          <div class="stat-box">
+            <div class="stat-number">{{ estadisticas.pendientes }}</div>
+            <div class="stat-label">Pendientes</div>
+          </div>
+        </ion-col>
+        <ion-col size="3">
+          <div class="stat-box">
+            <div class="stat-number text-danger">{{ estadisticas.alta }}</div>
+            <div class="stat-label">Alta Prior.</div>
+          </div>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </ion-toolbar>
+
+  <!-- Barra de búsqueda -->
+  <ion-toolbar>
+    <ion-searchbar
+      [(ngModel)]="busqueda"
+      (ionInput)="aplicarFiltros()"
+      placeholder="Buscar tareas..."
+      animated="true">
+    </ion-searchbar>
+  </ion-toolbar>
+
+  <!-- Filtros por categoría -->
+  <ion-toolbar>
+    <ion-segment [(ngModel)]="filtroCategoria" (ionChange)="aplicarFiltros()">
+      <ion-segment-button value="todas">
+        <ion-label>Todas</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="personal">
+        <ion-icon name="person"></ion-icon>
+        <ion-label>Personal</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="trabajo">
+        <ion-icon name="briefcase"></ion-icon>
+        <ion-label>Trabajo</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="social">
+        <ion-icon name="people"></ion-icon>
+        <ion-label>Social</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+
+  <!-- Filtros por prioridad y estado -->
+  <ion-toolbar>
+    <ion-grid>
+      <ion-row>
+        <ion-col size="6">
+          <ion-select 
+            [(ngModel)]="filtroPrioridad" 
+            (ionChange)="aplicarFiltros()" 
+            placeholder="Prioridad"
+            interface="popover">
+            <ion-select-option value="todas">Todas las prioridades</ion-select-option>
+            <ion-select-option value="baja">Baja</ion-select-option>
+            <ion-select-option value="media">Media</ion-select-option>
+            <ion-select-option value="alta">Alta</ion-select-option>
+          </ion-select>
+        </ion-col>
+        <ion-col size="6">
+          <ion-select 
+            [(ngModel)]="filtroEstado" 
+            (ionChange)="aplicarFiltros()" 
+            placeholder="Estado"
+            interface="popover">
+            <ion-select-option value="todas">Todos los estados</ion-select-option>
+            <ion-select-option value="inicial">Inicial
+          </ion-select-option>
+            <ion-select-option value="en-ejecucion">En Ejecución</ion-select-option>
+            <ion-select-option value="finalizada">Finalizada</ion-select-option>
+          </ion-select>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <!-- Lista de tareas con drag & drop -->
+  <ion-reorder-group *ngIf="tareasFiltradas.length > 0; else noTareas" (ionItemReorder)="reordenarTareas($event)" [disabled]="false">
+    <ion-item-sliding *ngFor="let tarea of tareasFiltradas">
+      <ion-item 
+        [class.completed-task]="tarea.estado === 'finalizada'"
+        [class.tarea-cercana]="esTareaCercana(tarea)">
+        
+        <ion-reorder slot="start"></ion-reorder>
+        
+        <ion-icon 
+          [name]="getIconoCategoria(tarea.categoria)" 
+          slot="start" 
+          [color]="getColorEstado(tarea.estado)">
+        </ion-icon>
+        
+        <ion-label>
+          <h2><strong>{{ tarea.titulo }}</strong></h2>
+          <p *ngIf="tarea.descripcion">{{ tarea.descripcion }}</p>
+          
+          <div class="badges">
+            <ion-badge [color]="getColorPrioridad(tarea.prioridad)">
+              {{ tarea.prioridad | uppercase }}
+            </ion-badge>
+            <ion-badge [color]="getColorEstado(tarea.estado)">
+              {{ tarea.estado === 'en-ejecucion' ? 'EN EJECUCIÓN' : tarea.estado | uppercase }}
+            </ion-badge>
+            <ion-badge color="medium">
+              {{ tarea.categoria | uppercase }}
+            </ion-badge>
+          </div>
+          
+          <p *ngIf="tarea.fecha" class="fecha-info">
+            <ion-icon name="calendar-outline"></ion-icon>
+            {{ tarea.fecha }}
+            <span *ngIf="tarea.hora">
+              <ion-icon name="time-outline"></ion-icon>
+              {{ tarea.hora }}
+            </span>
+            <span *ngIf="esTareaCercana(tarea)" class="badge-cercana">
+              Próxima a vencer
+            </span>
+          </p>
+          
+          <p *ngIf="tarea.observaciones" class="observaciones">
+            <ion-icon name="document-text-outline"></ion-icon>
+            {{ tarea.observaciones }}
+          </p>
+        </ion-label>
+      </ion-item>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-  </div>
+      <ion-item-options side="start">
+        <ion-item-option color="success" (click)="marcarCompletada(tarea)">
+          <ion-icon slot="icon-only" name="checkmark-circle"></ion-icon>
+        </ion-item-option>
+      </ion-item-options>
+
+      <ion-item-options side="end">
+        <ion-item-option color="primary" (click)="editarTarea(tarea)">
+          <ion-icon slot="icon-only" name="create"></ion-icon>
+        </ion-item-option>
+        <ion-item-option color="danger" (click)="eliminarTarea(tarea.id)">
+          <ion-icon slot="icon-only" name="trash"></ion-icon>
+        </ion-item-option>
+      </ion-item-options>
+    </ion-item-sliding>
+  </ion-reorder-group>
+
+  <ng-template #noTareas>
+    <div class="empty-state">
+      <ion-icon name="clipboard-outline" size="large"></ion-icon>
+      <h2>No hay tareas para mostrar</h2>
+      <p>Crea tu primera tarea o ajusta los filtros</p>
+      <ion-button color="primary" (click)="presentModalCompleto()">
+        <ion-icon slot="start" name="add-circle"></ion-icon>
+        Crear Tarea
+      </ion-button>
+    </div>
+  </ng-template>
+
+  <!-- Botón flotante -->
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="primary" (click)="presentModal()">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>
