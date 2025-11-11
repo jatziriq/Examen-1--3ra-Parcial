@@ -5,16 +5,16 @@
   .stat-number {
     font-size: 24px;
     font-weight: bold;
-    color: var(--ion-color-primary);
+    color: var(--ion-color-primary); /* mantiene el color original */
     
     &.text-danger {
-      color: var(--ion-color-danger);
+      color: var(--ion-color-danger); /* mantiene el color rojo para alta prioridad */
     }
   }
   
   .stat-label {
     font-size: 11px;
-    color: var(--ion-color-light);
+    color: black; /* cambiado a negro */
     text-transform: uppercase;
   }
 }
@@ -201,6 +201,7 @@ ion-reorder {
     
     .stat-label {
       font-size: 9px;
+      color: black; /* también negro en pantallas pequeñas */
     }
   }
   
